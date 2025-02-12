@@ -1,9 +1,9 @@
 <?php
-// Load environment variables from GitHub Secrets
-$database_host = getenv('DB_HOST');
-$database_name = getenv('DB_NAME');
-$database_user = getenv('DB_USER');
-$database_password = getenv('DB_PASSWORD');
+// Load environment variables from different sources
+$database_host = getenv('DB_HOST') ?: $_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? null;
+$database_name = getenv('DB_NAME') ?: $_ENV['DB_NAME'] ?? $_SERVER['DB_NAME'] ?? null;
+$database_user = getenv('DB_USER') ?: $_ENV['DB_USER'] ?? $_SERVER['DB_USER'] ?? null;
+$database_password = getenv('DB_PASSWORD') ?: $_ENV['DB_PASSWORD'] ?? $_SERVER['DB_PASSWORD'] ?? null;
 
 // Ensure credentials are properly loaded
 if (!$database_host || !$database_name || !$database_user || !$database_password) {
