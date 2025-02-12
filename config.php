@@ -1,17 +1,20 @@
-<?php
-// config.php
-
-$host = 'localhost';
-$dbName = 'hoangsit_mysql_giaoxu';
-$username = 'hoangsit_giaoxu_sql_user';
-$password = 'Bridgeport2020!'; // Replace with real password
-
-try {
-    $conn = new PDO("mysql:host=$host;dbname=$dbName;charset=utf8mb4", $username, $password);
-    // Set PDO error mode to exception
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    echo "Connection failed: " . $e->getMessage();
-    exit;
-}
-?>
+<?php
+// Load environment variables from GitHub Secrets
+$database_host = getenv('DB_HOST');
+$database_name = getenv('DB_NAME');
+$database_user = getenv('DB_USER');
+$database_password = getenv('DB_PASSWORD');
+
+// Ensure credentials are properly loaded
+if (!$database_host || !$database_name || !$database_user || !$database_password) {
+    die("Error: Database credentials are not set.");
+}
+
+// Database connection
+try {
+    $pdo = new PDO("mysql:host=$database_host;dbname=$database_name;charset=utf8", $database_user, $database_password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
+?>
