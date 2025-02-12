@@ -255,6 +255,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .submit-container input[type="reset"]:hover {
             background-color: #5a6268;
         }
+        /* Video Container */
+        .video-container {
+            width: 90%;
+            max-width: 560px; 
+            margin: 20px auto;
+            text-align: center;
+        }
+        .video-container iframe {
+            margin-bottom: 20px;
+            width: 100%;  /* Make iframe responsive */
+            height: 315px;
+            max-width: 560px; /* preserve YouTube default ratio as best as possible */
+        }
     </style>
 </head>
 <body>
@@ -292,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </label>
         <input type="text" name="last_name">
 
-        <!-- Email (optional now) -->
+        <!-- Email (optional) -->
         <label><?= t('label_email') ?></label>
         <input type="email" name="email">
 
@@ -305,6 +318,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="reset"  value="<?= htmlspecialchars(t('btn_reset'), ENT_QUOTES) ?>">
         </div>
     </form>
+</div>
+
+<!-- Two Embedded YouTube Videos Below the Form -->
+<div class="video-container">
+    <!-- First Video -->
+    <iframe 
+        src="https://www.youtube.com/embed/N7dxC2tdSNQ?si=gcWl3-8rlSUVTSv4" 
+        title="YouTube video player" 
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin" 
+        allowfullscreen>
+    </iframe>
+
+    <!-- Second Video -->
+    <iframe 
+        src="https://www.youtube.com/embed/VPi1dYZsj9g?si=wcSejPCJh5DV3kk2" 
+        title="YouTube video player" 
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin" 
+        allowfullscreen>
+    </iframe>
 </div>
 
 </body>
