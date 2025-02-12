@@ -255,18 +255,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .submit-container input[type="reset"]:hover {
             background-color: #5a6268;
         }
-        /* Video Container */
+
+        /*************************************************
+         * Two videos side by side in a responsive layout
+         *************************************************/
         .video-container {
-            width: 90%;
-            max-width: 560px; 
-            margin: 20px auto;
-            text-align: center;
+            display: flex;            /* enable flex layout for side by side */
+            flex-wrap: wrap;          /* wrap to next line if not enough space */
+            justify-content: center;  /* center horizontally */
+            gap: 20px;                /* space between video wrappers */
+            margin: 20px auto;        /* top/bottom margin, center horizontally */
+            max-width: 1200px;        /* optional max width */
         }
-        .video-container iframe {
-            margin-bottom: 20px;
-            width: 100%;  /* Make iframe responsive */
-            height: 315px;
-            max-width: 560px; /* preserve YouTube default ratio as best as possible */
+        /* Each video is wrapped in a .video-wrapper for independent control */
+        .video-wrapper {
+            flex: 1 1 400px;   /* grows/shrinks, minimum ~400px */
+            max-width: 560px;  /* keep typical YouTube width limit */
+            box-sizing: border-box;
+        }
+        /* Make each iframe responsive within .video-wrapper */
+        .video-wrapper iframe {
+            width: 100%;
+            height: 315px;  /* 16:9 ratio for a 560px width embed */
+            border: none;
         }
     </style>
 </head>
@@ -320,27 +331,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 </div>
 
-<!-- Two Embedded YouTube Videos Below the Form -->
+<!-- Two Embedded YouTube Videos Side by Side Below the Form -->
 <div class="video-container">
-    <!-- First Video -->
-    <iframe 
-        src="https://www.youtube.com/embed/N7dxC2tdSNQ?si=gcWl3-8rlSUVTSv4" 
-        title="YouTube video player" 
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        referrerpolicy="strict-origin-when-cross-origin" 
-        allowfullscreen>
-    </iframe>
+    <!-- First Video Wrapper -->
+    <div class="video-wrapper">
+        <iframe 
+            src="https://www.youtube.com/embed/N7dxC2tdSNQ?si=gcWl3-8rlSUVTSv4"
+            title="YouTube video player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+        </iframe>
+    </div>
 
-    <!-- Second Video -->
-    <iframe 
-        src="https://www.youtube.com/embed/VPi1dYZsj9g?si=wcSejPCJh5DV3kk2" 
-        title="YouTube video player" 
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        referrerpolicy="strict-origin-when-cross-origin" 
-        allowfullscreen>
-    </iframe>
+    <!-- Second Video Wrapper -->
+    <div class="video-wrapper">
+        <iframe
+            src="https://www.youtube.com/embed/VPi1dYZsj9g?si=wcSejPCJh5DV3kk2"
+            title="YouTube video player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+        </iframe>
+    </div>
 </div>
 
 </body>
