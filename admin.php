@@ -1,5 +1,5 @@
 <?php
-session_start(); // Ensure we have a session for potential authentication or error logging
+session_start();
 
 require 'config.php';
 
@@ -38,66 +38,64 @@ if (isset($_POST['delete_selected'])) {
             $stmt = $pdo->prepare($sql);
             $stmt->execute($deleteIds);
         } catch (PDOException $e) {
-            // Log the detailed error
             error_log("Error deleting multiple records: " . $e->getMessage());
-            // Show a generic error to the user
             $errors[] = "An error occurred while deleting the selected records. Please contact the administrator.";
         }
     }
 }
 
 /* -------------------------------------
-   3. Handle Search / Pagination
+   3. Handle Search and Pagination
 ------------------------------------- */
 
-// 3a. Get current search term (if any)
+// 3a. Get the current search term
 $searchTerm = $_GET['search'] ?? '';
+$searchTermLower = strtolower($searchTerm); // Use lowercase for case-insensitive matching
 
 // 3b. Pagination variables
 $page  = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$limit = 5;                  // Number of records per page
+$limit = 5; // Number of records per page
 if ($page < 1) {
     $page = 1;
 }
 $offset = ($page - 1) * $limit;
 
-// 3c. Build queries for counting and fetching
+// 3c. Build queries for counting and fetching (using LOWER(...) for case-insensitive search)
 if (!empty($searchTerm)) {
-    // If searching
+    // Searching
     $countSql = "SELECT COUNT(*) FROM members
-                 WHERE first_name LIKE :search
-                    OR last_name LIKE :search
-                    OR email LIKE :search";
+                 WHERE LOWER(first_name) LIKE :search
+                    OR LOWER(last_name)  LIKE :search
+                    OR LOWER(email)      LIKE :search";
 
-    $dataSql = "SELECT * FROM members
-                WHERE first_name LIKE :search
-                   OR last_name LIKE :search
-                   OR email LIKE :search
-                ORDER BY create_timestamp DESC
-                LIMIT :limit OFFSET :offset";
+    $dataSql  = "SELECT *
+                 FROM members
+                 WHERE LOWER(first_name) LIKE :search
+                    OR LOWER(last_name)  LIKE :search
+                    OR LOWER(email)      LIKE :search
+                 ORDER BY create_timestamp DESC
+                 LIMIT :limit OFFSET :offset";
 } else {
-    // If not searching
+    // No search
     $countSql = "SELECT COUNT(*) FROM members";
-
-    $dataSql  = "SELECT * FROM members
+    $dataSql  = "SELECT *
+                 FROM members
                  ORDER BY create_timestamp DESC
                  LIMIT :limit OFFSET :offset";
 }
 
-// 3d. Fetch total record count and compute total pages
+// 3d. Fetch total record count
 try {
     $stmtCount = $pdo->prepare($countSql);
-
     if (!empty($searchTerm)) {
-        $stmtCount->bindValue(':search', '%' . $searchTerm . '%', PDO::PARAM_STR);
+        $stmtCount->bindValue(':search', '%' . $searchTermLower . '%', PDO::PARAM_STR);
     }
-
     $stmtCount->execute();
     $totalCount = (int)$stmtCount->fetchColumn();
 } catch (PDOException $e) {
     error_log("Error counting records: " . $e->getMessage());
     $errors[] = "An error occurred while counting records. Please contact the administrator.";
-    $totalCount = 0; // Fallback
+    $totalCount = 0;
 }
 
 $totalPages = ($totalCount > 0) ? ceil($totalCount / $limit) : 1;
@@ -105,13 +103,11 @@ $totalPages = ($totalCount > 0) ? ceil($totalCount / $limit) : 1;
 // 3e. Fetch the actual records for this page
 try {
     $stmt = $pdo->prepare($dataSql);
-
     if (!empty($searchTerm)) {
-        $stmt->bindValue(':search', '%' . $searchTerm . '%', PDO::PARAM_STR);
+        $stmt->bindValue(':search', '%' . $searchTermLower . '%', PDO::PARAM_STR);
     }
     $stmt->bindValue(':limit',  $limit,  PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-
     $stmt->execute();
     $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -166,6 +162,7 @@ try {
             width: 300px;
             padding: 10px;
             border: 1px solid #ccc;
+            border-right: none;
             border-radius: 4px 0 0 4px;
             outline: none;
         }
@@ -181,15 +178,22 @@ try {
         .search-container button:hover {
             background-color: #0056b3;
         }
-        /* "Clear" link style */
-        .search-container a {
+        /* "Clear" button style */
+        a.btn-clear {
+            display: inline-block;
+            padding: 10px 15px;
             margin-left: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #6c757d; /* a muted color */
+            color: #fff;
             text-decoration: none;
-            color: #6c757d;
-            align-self: center;
+            font-size: 14px;
+            cursor: pointer;
+            align-self: center; /* aligns with the search button */
         }
-        .search-container a:hover {
-            text-decoration: underline;
+        a.btn-clear:hover {
+            background-color: #5a6268;
         }
         /* Table Styles */
         .admin-table {
@@ -321,8 +325,7 @@ try {
             <button type="submit">Search</button>
         </form>
         <?php if (!empty($searchTerm)): ?>
-            <!-- Show a clear link only if a search is active -->
-            <a href="admin.php">Clear</a>
+            <a href="admin.php" class="btn-clear">Clear</a>
         <?php endif; ?>
     </div>
 
@@ -376,7 +379,6 @@ try {
                                data-record-id="<?= $record['id']; ?>">
                                 Edit
                             </a>
-
                             <!-- Single Delete Form/Button -->
                             <form method="POST" action="" style="display:inline;"
                                   onsubmit="return confirm('Are you sure you want to delete this record?');">
