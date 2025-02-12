@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Load environment variables from different sources
 $database_host = ${{ secrets.DB_HOST }};
 $database_name = ${{ secrets.DB_NAME }};
