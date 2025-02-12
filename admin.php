@@ -2,6 +2,10 @@
 
 require 'config.php';
 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 /* -----------------------------------------
    1. Handle Single-Record Deletion if POST
 ----------------------------------------- */
@@ -24,7 +28,7 @@ if (isset($_POST['delete_single'])) {
 if (isset($_POST['delete_selected'])) {
     $deleteIds = $_POST['delete_ids'] ?? [];
     if (!empty($deleteIds)) {
-        $placeholders = rtrim(str_repeat('?,', count($deleteIds)), ',');
+        $placeholders = implode(',', array_fill(0, count($deleteIds), '?'));
         try {
             $sql = "DELETE FROM members WHERE id IN ($placeholders)";
             $stmt = $pdo->prepare($sql);
@@ -40,21 +44,20 @@ if (isset($_POST['delete_selected'])) {
 ------------------------------------- */
 $searchTerm = $_GET['search'] ?? '';
 $sql = "SELECT * FROM members ORDER BY create_timestamp DESC";
+$params = [];
 
 if (!empty($searchTerm)) {
     $sql = "SELECT * FROM members 
-            WHERE first_name LIKE :search 
-               OR last_name LIKE :search 
-               OR email LIKE :search 
+            WHERE first_name LIKE ? 
+               OR last_name LIKE ? 
+               OR email LIKE ? 
             ORDER BY create_timestamp DESC";
+    $params = ["%$searchTerm%", "%$searchTerm%", "%$searchTerm%"];
 }
 
 try {
     $stmt = $pdo->prepare($sql);
-    if (!empty($searchTerm)) {
-        $stmt->bindValue(':search', "%$searchTerm%", PDO::PARAM_STR);
-    }
-    $stmt->execute();
+    $stmt->execute($params);
     $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Database Error: " . $e->getMessage());
