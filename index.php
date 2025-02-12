@@ -1,74 +1,161 @@
 <?php
 // index.php
 
-require 'config.php'; // Ensure that $pdo is defined in config.php
+require 'config.php'; // Ensure it defines $pdo, e.g. `$pdo = new PDO(...)`
 
-// Initialize messages
+/************************************************
+ * 1. Simple Internationalization Setup
+ ***********************************************/
+$messages = [
+    'en' => [
+        // General
+        'language_label'          => 'Language:',
+        'language_english'        => 'English',
+        'language_vietnamese'     => 'Vietnamese',
+
+        // Headings
+        'site_title'              => 'Bridgeport Parish',
+        'register_heading'        => 'Register',
+
+        // Form Labels
+        'label_first_name'        => 'First Name',
+        'label_last_name'         => 'Last Name',
+        'label_email'             => 'Email',
+        'label_phone'             => 'Phone Number',
+
+        // Required note
+        'required_note'           => '*',
+
+        // Validation / Errors
+        'error_required'          => 'Please fill out all required fields.',
+        'error_email_invalid'     => 'Please enter a valid email address.',
+        'error_phone_invalid'     => 'Please enter a valid phone number.',
+        'error_email_registered'  => 'Email is registered. Please use a different email address.',
+        'error_generic'           => 'Error: ',
+
+        // Success
+        'success_msg'             => 'Registration successful!',
+
+        // Buttons
+        'btn_submit'              => 'Submit',
+        'btn_reset'               => 'Reset',
+    ],
+    'vi' => [
+        // General
+        'language_label'          => 'Ngôn ngữ:',
+        'language_english'        => 'Tiếng Anh',
+        'language_vietnamese'     => 'Tiếng Việt',
+
+        // Headings
+        'site_title'              => 'Giáo Xứ Bridgeport',
+        'register_heading'        => 'Đăng Ký',
+
+        // Form Labels
+        'label_first_name'        => 'Tên',
+        'label_last_name'         => 'Họ',
+        'label_email'             => 'Email',
+        'label_phone'             => 'Điện Thoại',
+
+        // Required note
+        'required_note'           => '*',
+
+        // Validation / Errors
+        'error_required'          => 'Vui lòng điền đầy đủ các trường bắt buộc.',
+        'error_email_invalid'     => 'Vui lòng nhập địa chỉ email hợp lệ.',
+        'error_phone_invalid'     => 'Vui lòng nhập số điện thoại hợp lệ.',
+        'error_email_registered'  => 'Email đã được đăng ký. Vui lòng sử dụng địa chỉ khác.',
+        'error_generic'           => 'Lỗi: ',
+
+        // Success
+        'success_msg'             => 'Đăng ký thành công!',
+
+        // Buttons
+        'btn_submit'              => 'Gửi',
+        'btn_reset'               => 'Xóa',
+    ]
+];
+
+// Decide which language to use (default to 'en')
+$lang = $_GET['lang'] ?? 'en';
+if (!in_array($lang, ['en', 'vi'])) {
+    $lang = 'en';
+}
+
+/**
+ * Helper function to get the translation
+ */
+function t($key) {
+    global $messages, $lang;
+    return $messages[$lang][$key] ?? $key;
+}
+
+/************************************************
+ * 2. Process Form Submission
+ ***********************************************/
 $success = '';
 $error   = '';
 
-// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Retrieve and trim form data
     $firstName   = trim($_POST['first_name'] ?? '');
     $lastName    = trim($_POST['last_name'] ?? '');
     $email       = trim($_POST['email'] ?? '');
     $phoneNumber = trim($_POST['phone_number'] ?? '');
-    
-    // Basic validations
 
-    // 1. Check required fields
-    if (empty($firstName) || empty($lastName) || empty($email)) {
-        $error = "Please fill out all required fields.";
+    // 1. Check required fields: first name & last name
+    if (empty($firstName) || empty($lastName)) {
+        $error = t('error_required');
     }
-    // 2. Validate email format
-    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Please enter a valid email address.";
+    // 2. Validate email format only if not empty
+    elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = t('error_email_invalid');
     }
-    // 3. Validate phone number (optional, if not empty)
+    // 3. Validate phone number if not empty
     elseif (!empty($phoneNumber) && !preg_match('/^[0-9\-\(\)\+\s]+$/', $phoneNumber)) {
-        $error = "Please enter a valid phone number.";
+        $error = t('error_phone_invalid');
     }
 
-    // If no errors so far, check for duplicate email
+    // Only proceed with DB checks and insert if no errors so far
     if (empty($error)) {
         try {
-            // Check if email already exists
-            $checkSql = "SELECT COUNT(*) FROM members WHERE email = :email";
-            $checkStmt = $pdo->prepare($checkSql);
-            $checkStmt->execute([':email' => $email]);
-            $emailCount = (int) $checkStmt->fetchColumn();
+            // If email is provided, check if it’s already in use
+            if (!empty($email)) {
+                $checkSql = "SELECT COUNT(*) FROM members WHERE email = :email";
+                $checkStmt = $pdo->prepare($checkSql);
+                $checkStmt->execute([':email' => $email]);
+                $emailCount = (int) $checkStmt->fetchColumn();
 
-            if ($emailCount > 0) {
-                $error = "That email is already registered. Please use a different one.";
-            } else {
-                // Insert data into the database
+                if ($emailCount > 0) {
+                    $error = t('error_email_registered');
+                }
+            }
+
+            // Insert only if no error from the duplicate check
+            if (empty($error)) {
                 $sql = "INSERT INTO members (first_name, last_name, email, phone_number)
                         VALUES (:first_name, :last_name, :email, :phone_number)";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([
                     ':first_name'   => $firstName,
                     ':last_name'    => $lastName,
-                    ':email'        => $email,
-                    ':phone_number' => $phoneNumber
+                    ':email'        => $email ?: null, // if empty, store as NULL
+                    ':phone_number' => $phoneNumber ?: null
                 ]);
-                
-                // Provide success feedback
-                $success = "Registration successful! | Đăng ký thành công!";
+
+                $success = t('success_msg');
             }
         } catch (PDOException $e) {
-            // For production, consider logging this instead of showing full error
-            $error = "Error: " . $e->getMessage();
+            // For production, consider logging instead of showing full error
+            $error = t('error_generic') . $e->getMessage();
         }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Registration - Giáo Xứ Bridgeport</title>
+    <title><?= htmlspecialchars(t('site_title'), ENT_QUOTES) ?></title>
     <style>
         /* Basic Reset */
         * {
@@ -81,6 +168,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-family: Arial, sans-serif;
             background-color: #f6f9fc;
             color: #333;
+        }
+        /* Language switcher */
+        .language-switcher {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .language-switcher a {
+            margin: 0 5px;
+            text-decoration: none;
+            color: #007BFF;
+        }
+        .language-switcher a:hover {
+            text-decoration: underline;
         }
         /* Headings */
         h1, h2 {
@@ -158,34 +258,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-    <h1>Giáo Xứ Bridgeport</h1>
-    <h2>Register | Đăng Ký</h2>
-    <div class="admin-container">
-        <?php if (!empty($success)) : ?>
-            <p class="success"><?= htmlspecialchars($success, ENT_QUOTES); ?></p>
-        <?php endif; ?>
-        <?php if (!empty($error)) : ?>
-            <p class="error"><?= htmlspecialchars($error, ENT_QUOTES); ?></p>
-        <?php endif; ?>
+
+<!-- Language Switcher -->
+<div class="language-switcher">
+    <span><?= t('language_label') ?></span>
+    <a href="?lang=en"><?= t('language_english') ?></a> | 
+    <a href="?lang=vi"><?= t('language_vietnamese') ?></a>
+</div>
+
+<h1><?= htmlspecialchars(t('site_title'), ENT_QUOTES) ?></h1>
+<h2><?= htmlspecialchars(t('register_heading'), ENT_QUOTES) ?></h2>
+
+<div class="admin-container">
+    <?php if (!empty($success)) : ?>
+        <p class="success"><?= htmlspecialchars($success, ENT_QUOTES); ?></p>
+    <?php endif; ?>
+    <?php if (!empty($error)) : ?>
+        <p class="error"><?= htmlspecialchars($error, ENT_QUOTES); ?></p>
+    <?php endif; ?>
+    
+    <form method="POST" action="">
+        <!-- First Name (required) -->
+        <label>
+            <?= t('label_first_name') ?> 
+            <span style="color:red;"><?= t('required_note') ?></span>
+        </label>
+        <input type="text" name="first_name">
+
+        <!-- Last Name (required) -->
+        <label>
+            <?= t('label_last_name') ?> 
+            <span style="color:red;"><?= t('required_note') ?></span>
+        </label>
+        <input type="text" name="last_name">
+
+        <!-- Email (optional now) -->
+        <label><?= t('label_email') ?></label>
+        <input type="email" name="email">
+
+        <!-- Phone Number (optional) -->
+        <label><?= t('label_phone') ?></label>
+        <input type="text" name="phone_number">
         
-        <form method="POST" action="">
-            <label>First Name | Tên <span style="color:red;">*</span></label>
-            <input type="text" name="first_name" required>
-            
-            <label>Last Name | Họ <span style="color:red;">*</span></label>
-            <input type="text" name="last_name" required>
-            
-            <label>Email <span style="color:red;">*</span></label>
-            <input type="email" name="email" required>
-            
-            <label>Phone Number | Điện Thoại</label>
-            <input type="text" name="phone_number">
-            
-            <div class="submit-container">
-                <input type="submit" value="Submit">
-                <input type="reset" value="Reset">
-            </div>
-        </form>
-    </div>
+        <div class="submit-container">
+            <input type="submit" value="<?= htmlspecialchars(t('btn_submit'), ENT_QUOTES) ?>">
+            <input type="reset"  value="<?= htmlspecialchars(t('btn_reset'), ENT_QUOTES) ?>">
+        </div>
+    </form>
+</div>
+
 </body>
 </html>
