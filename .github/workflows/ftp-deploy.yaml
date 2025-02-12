@@ -20,8 +20,9 @@ jobs:
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: 21
+          password: ${{ secrets.FTP_PASSWORD }}          
+          protocol: ftp  # or sftp
+          port: 21  # Change if necessary
           # The local directory to upload (relative to the repository root)
           # Adjust as needed. This means "upload everything from root".
           local-dir: ./
