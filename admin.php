@@ -2,410 +2,202 @@
 
 require 'config.php';
 
-
-
 /* -----------------------------------------
-
    1. Handle Single-Record Deletion if POST
-
 ----------------------------------------- */
-
 if (isset($_POST['delete_single'])) {
-
     $deleteId = $_POST['delete_single_id'] ?? null;
-
     if ($deleteId) {
-
         try {
-
             $sql = "DELETE FROM members WHERE id = :id";
-
             $stmt = $pdo->prepare($sql);
-
             $stmt->execute([':id' => $deleteId]);
-
         } catch (PDOException $e) {
-
             echo "Error deleting record: " . $e->getMessage();
-
             exit;
-
         }
-
     }
-
 }
 
-
-
 /* -------------------------------------
-
    2. Handle Multi-Deletion if POST
-
 ------------------------------------- */
 
 if (isset($_POST['delete_selected'])) {
-
     $deleteIds = $_POST['delete_ids'] ?? [];
-
     if (!empty($deleteIds)) {
-
         // Prepare placeholders for the IN clause
-
         $placeholders = rtrim(str_repeat('?,', count($deleteIds)), ',');
-
         try {
-
             $sql = "DELETE FROM members WHERE id IN ($placeholders)";
-
             $stmt = $pdo->prepare($sql);
-
             $stmt->execute($deleteIds);
-
         } catch (PDOException $e) {
-
             echo "Error deleting records: " . $e->getMessage();
-
             exit;
-
         }
-
     }
-
 }
 
-
-
 /* -------------------------------------
-
    3. Handle Search if GET
-
 ------------------------------------- */
 
 $searchTerm = $_GET['search'] ?? '';
-
 if (!empty($searchTerm)) {
-
     $sql = "SELECT * FROM members
-
             WHERE first_name LIKE :search
-
                OR last_name LIKE :search
-
                OR email LIKE :search
-
             ORDER BY create_timestamp DESC";
-
 } else {
-
     $sql = "SELECT * FROM members
-
             ORDER BY create_timestamp DESC";
-
 }
-
-
-
 try {
-
     $stmt = $pdo->prepare($sql);
-
     if (!empty($searchTerm)) {
-
         $stmt->bindValue(':search', '%' . $searchTerm . '%', PDO::PARAM_STR);
-
     }
-
     $stmt->execute();
-
     $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 } catch (PDOException $e) {
-
     echo "Error fetching records: " . $e->getMessage();
-
     exit;
-
 }
-
 ?>
 
 
-
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <title>Admin - Giáo Xứ Bridgeport</title>
-
     <style>
-
         /* Basic Reset */
-
         * {
-
             margin: 0;
-
             padding: 0;
-
             box-sizing: border-box;
-
         }
-
-
-
         /* Body */
-
         body {
-
             font-family: Arial, sans-serif;
-
             background-color: #f6f9fc;
-
             color: #333;
-
         }
-
-
-
         /* Headings */
-
         h1 {
-
             text-align: center;
-
             margin-top: 20px;
-
             margin-bottom: 10px;
-
             font-weight: 600;
-
         }
-
-
-
         /* Main Container */
-
         .admin-container {
-
             width: 1000px; /* Adjust as needed */
-
             max-width: 95%;
-
             margin: 20px auto;
-
             background: #fff;
-
             padding: 20px 25px;
 
             border-radius: 8px;
-
             border: 1px solid #ccc;
-
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-
         }
-
-
-
         /* Search Container */
-
         .search-container {
-
             display: flex;
-
             justify-content: center;
-
             margin-bottom: 20px;
-
         }
-
         .search-container input[type="text"] {
-
             width: 300px;
-
             padding: 10px;
-
             border: 1px solid #ccc;
-
             border-radius: 4px 0 0 4px;
-
             outline: none;
-
         }
-
         .search-container button {
-
             padding: 10px 15px;
-
             border: none;
-
             cursor: pointer;
-
             background-color: #007BFF;
-
             color: #fff;
-
             border-radius: 0 4px 4px 0;
-
             font-size: 14px;
-
         }
-
         .search-container button:hover {
-
             background-color: #0056b3;
-
         }
-
         /* "Clear" link style */
-
         .search-container a {
-
             margin-left: 10px;
-
             text-decoration: none;
-
             color: #6c757d;
-
             align-self: center;
-
         }
-
         .search-container a:hover {
-
             text-decoration: underline;
-
         }
-
-
-
         /* Table Styles */
-
         .admin-table {
-
             width: 100%;
-
             border-collapse: collapse;
-
             margin-bottom: 20px;
-
         }
-
         .admin-table thead {
-
             background-color: #eee;
-
         }
-
         .admin-table th, .admin-table td {
-
             border: 1px solid #ccc;
-
             padding: 10px;
-
             text-align: left;
-
         }
-
         .admin-table th {
-
             font-weight: bold;
-
         }
-
         .no-records {
-
             text-align: center;
-
             margin-top: 20px;
-
         }
-
-
-
         /* Buttons */
-
         .btn {
-
             padding: 6px 12px;
-
             text-decoration: none;
-
             background-color: #007BFF;
-
             color: #fff;
-
             border-radius: 4px;
-
             margin-right: 5px;
-
             display: inline-block;
-
         }
-
         .btn:hover {
-
             background-color: #0056b3;
-
         }
-
-
-
         /* Delete Button Styles */
-
         .delete-single-btn {
-
             padding: 6px 12px;
-
             background-color: #dc3545;
-
             color: #fff;
-
             border-radius: 4px;
-
             border: none;
-
             cursor: pointer;
-
         }
-
         .delete-single-btn:hover {
-
             background-color: #c82333;
-
         }
-
-
-
         /* Delete Selected Button */
-
         .delete-container {
-
             text-align: right;
-
             margin-bottom: 10px;
-
         }
-
         .delete-btn {
-
             padding: 8px 12px;
-
             border: none;
-
             border-radius: 4px;
-
             background-color: #dc3545;
-
             color: #fff;
-
             cursor: pointer;
-
         }
 
         .delete-btn:hover {
