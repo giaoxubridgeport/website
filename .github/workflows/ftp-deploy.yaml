@@ -1,0 +1,31 @@
+name: FTP Deploy
+
+on:
+  push:
+    branches:
+      - main  # or any branch you want to deploy
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      # Step 2: Deploy to FTP using a pre-built GitHub Action
+      - name: Deploy to FTP
+        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        with:
+          ftp-server: ${{ secrets.FTP_HOST }}
+          ftp-username: ${{ secrets.FTP_USERNAME }}
+          ftp-password: ${{ secrets.FTP_PASSWORD }}
+          # The local directory to upload (relative to the repository root)
+          # Adjust as needed. This means "upload everything from root".
+          local-dir: ./
+
+          # Additional optional parameters:
+          # remote-dir: "/public_html"  # If you need to deploy to a subfolder on your host
+          # method: "auto"             # Usually "auto" is fine (auto choose FTP or FTPS)
+
