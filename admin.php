@@ -1,10 +1,5 @@
 <?php
 
-<?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-?>
-
 require 'config.php';
 
 
@@ -25,7 +20,7 @@ if (isset($_POST['delete_single'])) {
 
             $sql = "DELETE FROM members WHERE id = :id";
 
-            $stmt = $conn->prepare($sql);
+            $stmt = $pdo->prepare($sql);
 
             $stmt->execute([':id' => $deleteId]);
 
@@ -63,7 +58,7 @@ if (isset($_POST['delete_selected'])) {
 
             $sql = "DELETE FROM members WHERE id IN ($placeholders)";
 
-            $stmt = $conn->prepare($sql);
+            $stmt = $pdo->prepare($sql);
 
             $stmt->execute($deleteIds);
 
@@ -113,7 +108,7 @@ if (!empty($searchTerm)) {
 
 try {
 
-    $stmt = $conn->prepare($sql);
+    $stmt = $pdo->prepare($sql);
 
     if (!empty($searchTerm)) {
 
